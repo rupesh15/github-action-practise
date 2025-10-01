@@ -1,0 +1,43 @@
+name: create-CI/CD-pipeline-react-app
+on:
+    push:
+        branches:
+            - develop
+            - main
+
+    pull_request:
+        branches:
+            - develop 
+            - main
+
+jobs:
+    trigger-when-pr-pushed:
+        runs-on: ubuntu-latest
+        steps:
+            # 1. Checkout to repo
+            - name: Checkout code
+              uses: actions/checkout@v3
+
+            # 2. Set nodejs app
+            - name: Setup nodejs
+              uses: actions/setup-node@v3
+              with: 
+                node-version: '24.0.0'
+                cache: 'npm'
+            
+            # 3. Install dependence
+            - name: Install dependences
+              run: npm install
+              
+            # 4. Npm run test
+            - name: Run test
+              run: npm run lint
+
+            # 5. Build react app
+            - name: Build react app
+              run: npm run build
+              
+            # 6. Build passed now need to deploy
+            - name: Deploy need to be done
+              uses: echo "need to be added"
+
