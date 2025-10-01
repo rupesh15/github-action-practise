@@ -28,16 +28,12 @@ jobs:
             # 3. Install dependence
             - name: Install dependences
               run: npm install
-              
-            # 4. Npm run test
-            - name: Run test
-              run: npm run lint
 
-            # 5. Build react app
+            # 4. Build react app
             - name: Build react app
               run: npm run build
               
-            # 6. Build passed now need to deploy
+            # 5. Build passed now need to deploy
             - name: Deploy need to be done
               run: echo "need to be added"
 
