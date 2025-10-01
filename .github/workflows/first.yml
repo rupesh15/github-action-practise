@@ -37,7 +37,3 @@ jobs:
             - name: Deploy need to be done
               run: echo "need to be added"
 
-           # 6. Testing run of react application
-            - name: Trying to run react app in github
-              run: npm run dev
-
