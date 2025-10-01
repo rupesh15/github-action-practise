@@ -39,5 +39,5 @@ jobs:
               
             # 6. Build passed now need to deploy
             - name: Deploy need to be done
-              uses: echo "need to be added"
+              run: echo "need to be added"
 
