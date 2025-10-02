@@ -48,7 +48,7 @@ jobs:
         # the above sets step outputs branch_full and branch_short
 
       - name: Use job output
-        run: echo "Short branch from previous step: ${{ needs.string-and-boolean.outputs.branch-short || steps.get-branch.outputs.branch_short || github.ref }}"
+        run: echo "Short branch from previous step ${{ needs.string-and-boolean.outputs.branch-short || steps.get-branch.outputs.branch_short || github.ref }}"
 
   # ---------------------------
   # 2) Math / JSON / array
