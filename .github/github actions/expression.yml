@@ -1,195 +1,111 @@
-# File: .github/workflows/expressions-cheatsheet.yml
-# Trigger on push to main (so it runs when you push to main)
-name: Expressions Cheatsheet
+# .github/workflows/expression.yml
+name: Expressions — Fixed
 
 on:
   push:
     branches: [ "main" ]
 
-# Top-level env you can refer to with ${{ env.VAR_NAME }}
 env:
   GLOBAL_GREETING: "hello from env"
 
 jobs:
-
-  # ---------------------------
-  # 1) String / boolean utils
-  # ---------------------------
-  string-and-boolean:
+  demo:
     runs-on: ubuntu-latest
     outputs:
-      branch-short: ${{ steps.get-branch.outputs.branch_short }} # example of job output
+      branch-short: ${{ steps.get-branch.outputs.branch_short }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Show simple contexts
+      - name: Show basic contexts
         run: |
           echo "Repository: ${{ github.repository }}"
           echo "Actor: ${{ github.actor }}"
           echo "Event name: ${{ github.event_name }}"
-          echo "SHA (short): ${{ github.sha }}"
-      # toUpper / toLower / startsWith / contains
-      - name: String functions examples
-        run: |
-          echo "Uppercase: ${{ toUpper('hello world') }}"          # toUpper(str)
-          echo "Lowercase: ${{ toLower('HeLLo') }}"               # toLower(str)
-          echo "StartsWith refs/heads: ${{ startsWith(github.ref, 'refs/heads/') }}" # bool
-          echo "Contains 'WIP' in commit? ${{ contains(github.event.head_commit.message, 'WIP') }}" # bool
+          echo "Full ref: ${{ github.ref }}"
+          echo "Full SHA: ${{ github.sha }}"
 
-      - name: Compute branch short name
-        id: get-branch
+      # -----------------------
+      # String transforms in shell (NOT in YAML expressions)
+      # -----------------------
+      - name: String transforms (shell)
+        id: str-trans
         run: |
-          # github.ref often is refs/heads/<branch>
-          # remove prefix via replace
-          echo "branch_full=${{ github.ref }}" >> $GITHUB_OUTPUT
-          branch_short="${{ replace(github.ref, 'refs/heads/', '') }}"
+          # do transformations in the shell (bash) and export them as step outputs
+          upper=$(echo "hello world" | tr '[:lower:]' '[:upper:]')
+          lower=$(echo "HeLLo" | tr '[:upper:]' '[:lower:]')
+          branch_full="${GITHUB_REF:-${{ github.ref }}}"
+          branch_short="${branch_full#refs/heads/}"
+          echo "upper=$upper" >> $GITHUB_OUTPUT
+          echo "lower=$lower" >> $GITHUB_OUTPUT
+          echo "branch_full=$branch_full" >> $GITHUB_OUTPUT
           echo "branch_short=$branch_short" >> $GITHUB_OUTPUT
-        # the above sets step outputs branch_full and branch_short
 
-      - name: Use job output
-        run: echo "Short branch from previous step: ${{ needs.string-and-boolean.outputs.branch-short || steps.get-branch.outputs.branch_short || github.ref }}"
-
-  # ---------------------------
-  # 2) Math / JSON / array
-  # ---------------------------
-  math-and-json:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Math & arrays & fromJSON
+      - name: Use string transform outputs
         run: |
-          echo "Format number: ${{ format('{0:.2f}', 123.4567) }}"     # format
-          echo "Sum (5 + 3): ${{ 5 + 3 }}"                             # arithmetic
-          echo "From JSON (index 1): ${{ fromJSON('[10,20,30]')[1] }}" # array access => 20
-          # join and toJSON
-          echo "Join array: ${{ join(fromJSON('[\"a\",\"b\",\"c\"]'), ',') }}"
-          echo "toJSON example: ${{ toJSON(fromJSON('{\"k\":\"v\"}')) }}"
+          echo "Uppercase (from shell): ${{ steps.str-trans.outputs.upper }}"
+          echo "Lowercase (from shell): ${{ steps.str-trans.outputs.lower }}"
+          echo "Short branch: ${{ steps.str-trans.outputs.branch_short }}"
 
-      - name: parse input-like JSON
+      # -----------------------
+      # Use supported expression functions (contains, startsWith, hashFiles)
+      # -----------------------
+      - name: Expression examples (supported)
         run: |
-          # example showing safe default with 'github.event.head_commit' which exists on pushes
-          echo "Commit message as JSON-safe string: ${{ toJSON(github.event.head_commit.message) }}"
-
-  # ---------------------------
-  # 3) Logical operators & ternary
-  # ---------------------------
-  logic-and-ternary:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Logical operators
-        run: |
-          echo "Is main or develop? ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' }}"
-          echo "Actor is not a bot: ${{ !contains(github.actor, 'bot') }}"
-      - name: Ternary example
-        run: |
-          # form: condition && 'true-val' || 'false-val'
-          echo "${{ github.ref == 'refs/heads/main' && 'This is main' || 'Not main' }}"
-
-  # ---------------------------
-  # 4) If conditions (per-step) and combinations
-  # ---------------------------
-  conditional-steps:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Always runs
-        run: echo "I always run"
-
-      - name: Run only on main
-        if: github.ref == 'refs/heads/main'
-        run: echo "Running because this is main"
-
-      - name: Run if commit message contains [deploy]
-        if: contains(github.event.head_commit.message, '[deploy]')
-        run: echo "Commit message has [deploy]"
-
-      - name: Complex condition (branch + not bot)
-        if: startsWith(github.ref, 'refs/heads/release/') && !contains(github.actor, 'bot')
-        run: echo "Release branch push by a non-bot actor"
-
-  # ---------------------------
-  # 5) Matrix + strategy expressions
-  # ---------------------------
-  matrix-demo:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [16, 20]
-        os: [ubuntu-latest]
-      fail-fast: false
-    steps:
-      - name: Show matrix values
-        run: |
-          echo "Matrix node-version: ${{ matrix.node-version }}"
-          echo "Combined: node-${{ matrix.node-version }}-${{ matrix.os }}"
-
-  # ---------------------------
-  # 6) Outputs & needs (passing values between jobs)
-  # ---------------------------
-  producer:
-    runs-on: ubuntu-latest
-    outputs:
-      produced-value: ${{ steps.make.outputs.value }}
-    steps:
-      - name: Make an output value
-        id: make
-        run: |
-          echo "value=42" >> $GITHUB_OUTPUT
-
-  consumer:
-    runs-on: ubuntu-latest
-    needs: [producer]
-    steps:
-      - name: Get produced value from previous job
-        run: |
-          echo "Value from producer job: ${{ needs.producer.outputs.produced-value }}"
-
-  # ---------------------------
-  # 7) File hash, secret usage, and format examples
-  # ---------------------------
-  file-secret-format:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Hash important files
-        run: |
-          # hashFiles returns a hash of files; good for cache keys
+          echo "refs/heads main? ${{ startsWith(github.ref, 'refs/heads/main') }}"
+          echo "Commit message contains WIP? ${{ contains(github.event.head_commit.message, 'WIP') }}"
           echo "Hash of package.json: ${{ hashFiles('**/package.json') }}"
 
-      - name: Use secret safely (example; do NOT echo secrets)
+      # -----------------------
+      # Arithmetic / slicing in shell
+      # -----------------------
+      - name: Arithmetic & short SHA (shell)
+        id: compute
         run: |
-          # secrets are available as ${{ secrets.MY_SECRET }} but avoid printing them
-          if: always()
-          echo "Secret available? ${{ secrets.MY_SECRET != '' }}" # prints true/false only
+          sum=$((5 + 3))
+          short_sha="${GITHUB_SHA:0:7}"
+          echo "sum=$sum" >> $GITHUB_OUTPUT
+          echo "short_sha=$short_sha" >> $GITHUB_OUTPUT
 
-      - name: use format to build string
+      - name: Show computed values
         run: |
-          echo "${{ format('release-{0}-{1}', replace(github.ref, 'refs/heads/', ''), github.sha[0:7]) }}"
+          echo "Sum from shell: ${{ steps.compute.outputs.sum }}"
+          echo "Short SHA from shell: ${{ steps.compute.outputs.short_sha }}"
 
-  # ---------------------------
-  # 8) Special functions: always(), cancelled, success(), fromJSON->object access
-  # ---------------------------
-  final-examples:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Step that fails intentionally
-        id: will-fail
+      # -----------------------
+      # Conditional step using expressions (works in YAML)
+      # -----------------------
+      - name: Run only if commit message includes [deploy]
+        if: contains(github.event.head_commit.message, '[deploy]')
+        run: echo "Deploy tag present in commit message"
+
+      - name: Run only for release/* (and non-bot)
+        if: startsWith(github.ref, 'refs/heads/release/') && !contains(github.actor, 'bot')
+        run: echo "Release push by non-bot actor"
+
+      # -----------------------
+      # failure(), always()
+      # -----------------------
+      - name: Step that fails intentionally (demo)
+        id: fail-step
         run: |
-          echo "This will exit 1 for demo"
+          echo "This step will fail for the demo"
           exit 1
         continue-on-error: true
 
-      - name: Run only when something failed earlier in job
-        if: failure()    # true if any prior step failed
-        run: echo "One of previous steps failed; failure() is true"
+      - name: Run only when something failed earlier in the job
+        if: failure()
+        run: echo "A previous step failed."
 
-      - name: Run always (cleanup)
+      - name: Always run (cleanup)
         if: always()
-        run: echo "Cleanup/always step runs regardless of success/failure"
+        run: echo "Always runs (cleanup)"
 
-      - name: Use fromJSON to access object
+      # -----------------------
+      # Produce job output for downstream jobs
+      # -----------------------
+      - name: Set job outputs for consumer jobs
+        id: get-branch
         run: |
-          echo "item name: ${{ fromJSON('{\"name\":\"app\",\"version\":1}').name }}"
-
-# End of workflow
+          echo "branch_short=${{ steps.str-trans.outputs.branch_short }}" >> $GITHUB_OUTPUT
