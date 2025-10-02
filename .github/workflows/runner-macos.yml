@@ -1,0 +1,30 @@
+name: MacOS runner Example
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  running-macos-runner:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v3
+
+      - name: Create Swift file
+        run: |
+          echo 'print("hello from swift on macos")' > hello.swift
+
+      - name: Install dependencies
+        run: |
+          brew install swiftlint
+
+      - name: Run swiftlint
+        run: swiftlint
+
+      - name: Compile and run Swift program
+        run: |
+          swiftc hello.swift -o hello
+          ./hello
