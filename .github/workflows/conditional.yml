@@ -7,7 +7,7 @@ on:
 
 jobs:
     hello-world:
-        if: github.repository == 'github-action-practise'
+        if: github.repository == 'github-action-practises'
         runs-on: ubuntu-latest
         steps:
             - name: "Hello World"
