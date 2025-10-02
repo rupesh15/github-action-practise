@@ -3,7 +3,7 @@ Name: Webhook Event Example
 on: 
     repository_dispatch:
         types:
-            - webhook
+            - custom_webhook
 
 jobs:  
    respond-to-dispatch:
@@ -12,4 +12,4 @@ jobs:
         - name: checkout repo
           uses: action/checkout@v2
         - name: Run a script
-          uses: echo "Event of type: $GITHUB_EVENT_NAME"  
+          uses: echo "Event of type: ${{github.event_name}}"  
