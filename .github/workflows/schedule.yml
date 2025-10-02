@@ -1,15 +1,12 @@
-# it works on only default branch
-
-name : 'schedule event'
+name: schedule event
 
 on:
   schedule:
     - cron: "*/5 * * * *"
 
-
 jobs:
-    schedules-example:
-        runs-on: ubuntu-latest
-        steps:
-            - name : echo current time
-              run: echo "the current time is $(date) "
+  schedules-example:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Echo current time
+        run: echo "The current time is $(date)"
